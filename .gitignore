@@ -6,6 +6,8 @@
 flamegraph*.svg
 tmp
 *.log
+*.out
+*.env
 
 # Artifacts that may be left over
 **/*-secret-manager-*
