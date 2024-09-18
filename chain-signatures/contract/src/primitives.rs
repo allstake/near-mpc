@@ -13,6 +13,7 @@ pub mod hpke {
 #[borsh(crate = "near_sdk::borsh")]
 pub enum StorageKey {
     PendingRequests,
+    RequestDetails,
     ProposedUpdatesEntries,
 }
 

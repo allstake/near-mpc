@@ -15,7 +15,7 @@ use errors::{
 use k256::elliptic_curve::sec1::ToEncodedPoint;
 use k256::Scalar;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LookupMap;
+use near_sdk::collections::UnorderedMap;
 use near_sdk::json_types::U128;
 use near_sdk::{
     env, log, near_bindgen, AccountId, CryptoHash, Gas, GasWeight, NearToken, Promise,
@@ -64,7 +64,7 @@ impl Default for VersionedMpcContract {
 #[derive(BorshDeserialize, BorshSerialize, Debug)]
 pub struct MpcContract {
     protocol_state: ProtocolContractState,
-    pending_requests: LookupMap<SignatureRequest, YieldIndex>,
+    pending_requests: UnorderedMap<SignatureRequest, YieldIndex>,
     request_counter: u32,
     proposed_updates: ProposedUpdates,
     config: Config,
@@ -101,7 +101,7 @@ impl MpcContract {
                 threshold,
                 pk_votes: PkVotes::new(),
             }),
-            pending_requests: LookupMap::new(StorageKey::PendingRequests),
+            pending_requests: UnorderedMap::new(StorageKey::PendingRequests),
             request_counter: 0,
             proposed_updates: ProposedUpdates::default(),
             config: config.unwrap_or_default(),
@@ -121,7 +121,7 @@ impl VersionedMpcContract {
     pub fn sign(&mut self, request: SignRequest) -> Result<near_sdk::Promise, Error> {
         let SignRequest {
             payload,
-            path,
+            ref path,
             key_version,
         } = request;
         // It's important we fail here because the MPC nodes will fail in an identical way.
@@ -575,6 +575,26 @@ impl VersionedMpcContract {
 
         Ok(true)
     }
+
+    /// Get pending requests by offset and limit
+    pub fn get_pending_requests(
+        &self,
+        offset: Option<u64>,
+        limit: Option<u64>,
+    ) -> Vec<SignatureRequest> {
+        match self {
+            Self::V0(mpc_contract) => {
+                let offset = offset.unwrap_or_default() as usize;
+                let limit = limit.unwrap_or(u64::MAX) as usize;
+                mpc_contract
+                    .pending_requests
+                    .keys()
+                    .skip(offset)
+                    .take(limit)
+                    .collect()
+            }
+        }
+    }
 }
 
 // Contract developer helper API
@@ -637,7 +657,7 @@ impl VersionedMpcContract {
                 join_votes: Votes::new(),
                 leave_votes: Votes::new(),
             }),
-            pending_requests: LookupMap::new(StorageKey::PendingRequests),
+            pending_requests: UnorderedMap::new(StorageKey::PendingRequests),
             request_counter: 0,
             proposed_updates: ProposedUpdates::default(),
             config: config.unwrap_or_default(),
@@ -799,7 +819,7 @@ impl VersionedMpcContract {
 
     fn request_already_exists(&self, request: &SignatureRequest) -> bool {
         match self {
-            Self::V0(mpc_contract) => mpc_contract.pending_requests.contains_key(request),
+            Self::V0(mpc_contract) => mpc_contract.pending_requests.get(request).is_some(),
         }
     }
 

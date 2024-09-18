@@ -3843,6 +3843,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "mpc-test-node"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "borsh",
+ "clap",
+ "crypto-shared",
+ "digest 0.10.7",
+ "ecdsa 0.16.9",
+ "hex 0.4.3",
+ "http 1.1.0",
+ "k256",
+ "mpc-contract",
+ "near-account-id",
+ "near-crypto 0.23.0",
+ "near-fetch",
+ "near-gas",
+ "near-sdk",
+ "near-workspaces",
+ "rand 0.8.5",
+ "reqwest 0.11.27",
+ "schemars",
+ "serde",
+ "serde_json",
+ "signature 2.2.0",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-stackdriver",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "multimap"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

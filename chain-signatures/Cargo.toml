@@ -3,6 +3,7 @@ members = [
     "contract",
     "keys",
     "node",
+    "test-node",
 ]
 resolver = "2"
 

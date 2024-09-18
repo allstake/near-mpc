@@ -20,7 +20,7 @@ use near_sdk::NearToken;
 use near_workspaces::network::Sandbox;
 use near_workspaces::types::AccountId;
 use near_workspaces::{Account, Contract, Worker};
-use signature::DigestSigner;
+use signature::hazmat::PrehashSigner;
 
 pub const CONTRACT_FILE_PATH: &str =
     "../../target/wasm32-unknown-unknown/release/mpc_contract.wasm";
@@ -159,7 +159,7 @@ pub async fn create_response(
     path: &str,
     sk: &k256::SecretKey,
 ) -> ([u8; 32], SignatureRequest, SignatureResponse) {
-    let (digest, scalar_hash, payload_hash) = process_message(msg).await;
+    let (_digest, _scalar_hash, payload_hash) = process_message(msg).await;
     let pk = sk.public_key();
 
     let epsilon = derive_epsilon(predecessor_id, path);
@@ -170,8 +170,8 @@ pub async fn create_response(
         k256::ecdsa::VerifyingKey::from(&k256::PublicKey::from_affine(derived_pk).unwrap());
 
     let (signature, _): (ecdsa::Signature<Secp256k1>, _) =
-        signing_key.try_sign_digest(digest).unwrap();
-    verifying_key.verify(msg.as_bytes(), &signature).unwrap();
+        signing_key.sign_prehash(&payload_hash).unwrap();
+    assert!(verifying_key.verify(&msg.as_bytes(), &signature).is_ok());
 
     let s = signature.s();
     let (r_bytes, _s_bytes) = signature.split_bytes();
@@ -181,9 +181,9 @@ pub async fn create_response(
         AffinePoint::decompress(&r_bytes, k256::elliptic_curve::subtle::Choice::from(0)).unwrap();
     let s: k256::Scalar = *s.as_ref();
 
-    let recovery_id = if check_ec_signature(&derived_pk, &big_r, &s, scalar_hash, 0).is_ok() {
+    let recovery_id = if check_ec_signature(&derived_pk, &big_r, &s, payload_hash_s, 0).is_ok() {
         0
-    } else if check_ec_signature(&derived_pk, &big_r, &s, scalar_hash, 1).is_ok() {
+    } else if check_ec_signature(&derived_pk, &big_r, &s, payload_hash_s, 1).is_ok() {
         1
     } else {
         panic!("unable to use recovery id of 0 or 1");
